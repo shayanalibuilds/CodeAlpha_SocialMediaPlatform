@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import Avatar from '../components/Avatar';
 import Spinner from '../components/Spinner';
+import PostList from '../components/PostList';
 
 function EditProfileForm({ user, onSaved, onCancel }) {
   const [name, setName] = useState(user.name);
@@ -142,6 +143,16 @@ export default function ProfilePage() {
           }}
         />
       )}
+
+      <h2 className="mb-3 mt-6 px-1 text-sm font-semibold text-slate-500">
+        Posts by {profile.name}
+      </h2>
+      <PostList
+        scope="explore"
+        author={profile.username}
+        emptyTitle="No updates yet."
+        emptyText={isSelf ? 'Share your first update from the home page.' : 'Come back later.'}
+      />
     </div>
   );
 }

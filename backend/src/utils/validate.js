@@ -45,4 +45,18 @@ function validateProfileUpdate(body) {
   return { errors, values };
 }
 
-module.exports = { USERNAME_RE, EMAIL_RE, URL_RE, validateRegister, validateProfileUpdate };
+function validatePost(body) {
+  const text = typeof body.body === 'string' ? body.body.trim() : '';
+  const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : '';
+
+  const errors = [];
+  if (text.length < 1) errors.push('Write something first.');
+  if (text.length > 280) errors.push('Updates are limited to 280 characters.');
+  if (imageUrl && (!URL_RE.test(imageUrl) || imageUrl.length > 500)) {
+    errors.push('Image needs a valid http(s) URL.');
+  }
+
+  return { errors, values: { body: text, imageUrl } };
+}
+
+module.exports = { USERNAME_RE, EMAIL_RE, URL_RE, validateRegister, validateProfileUpdate, validatePost };
