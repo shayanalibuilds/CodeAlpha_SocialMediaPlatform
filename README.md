@@ -8,6 +8,35 @@ books, coding, sports, and art — no dating, no DMs, no ads, no pricing.
 
 **Author:** Shayan Ali Jalbani (@shayanalibuilds)
 
+## Screenshots
+
+Captured from a live run of the seed data — every page of the app, desktop at
+1280×900 plus one mobile view.
+
+| Log in | Register |
+|---|---|
+| ![Log in page](docs/screenshots/01-login.png) | ![Register page](docs/screenshots/02-register.png) |
+
+| Home — guest view | Home feed (logged in) |
+|---|---|
+| ![Home page as a guest](docs/screenshots/03-home-guest.png) | ![Home feed logged in](docs/screenshots/05-home-feed.png) |
+
+| Explore | Post detail with comments |
+|---|---|
+| ![Explore page](docs/screenshots/04-explore-guest.png) | ![Post detail with comment thread](docs/screenshots/06-post-detail.png) |
+
+| Own profile (edit bio) | Another user's profile (follow) |
+|---|---|
+| ![Own profile with edit form](docs/screenshots/07-profile-own.png) | ![Another user's profile with follow button](docs/screenshots/08-profile-other.png) |
+
+| Followers | Following |
+|---|---|
+| ![Followers list](docs/screenshots/09-followers.png) | ![Following list](docs/screenshots/10-following.png) |
+
+Responsive at 375 px — the whole layout stacks with no horizontal overflow:
+
+![Mobile home feed](docs/screenshots/11-mobile-home.png)
+
 ## Stack
 
 - **MongoDB + Mongoose** — data layer (User, Follow, Post, Like, Comment)
