@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import PostPage from './pages/PostPage';
+import FollowersPage from './pages/FollowersPage';
+import FollowingPage from './pages/FollowingPage';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/posts/:id" element={<PostPage />} />
             <Route path="/u/:username" element={<ProfilePage />} />
+            <Route path="/u/:username/followers" element={<FollowersPage />} />
+            <Route path="/u/:username/following" element={<FollowingPage />} />
             <Route
               path="*"
               element={

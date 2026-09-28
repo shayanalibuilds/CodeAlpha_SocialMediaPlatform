@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Like = require('../models/Like');
+const Follow = require('../models/Follow');
 const User = require('../models/User');
 const { validatePost } = require('../utils/validate');
 const { withViewerState } = require('../utils/serialize');
@@ -20,8 +21,9 @@ async function listPosts(req, res, next) {
 
     if (scope === 'feed') {
       if (!req.user) return res.status(401).json({ error: 'Please log in to see your feed.' });
-      // Own posts for now; followed authors join in the follow-graph slice.
-      filter.author = { $in: [req.user._id] };
+      // Posts by me + everyone I follow, newest first.
+      const follows = await Follow.find({ follower: req.user._id }).select('following');
+      filter.author = { $in: [req.user._id, ...follows.map((doc) => doc.following)] };
     }
 
     if (req.query.author) {

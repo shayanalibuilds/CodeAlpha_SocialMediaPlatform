@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import Avatar from '../components/Avatar';
 import Spinner from '../components/Spinner';
 import PostList from '../components/PostList';
+import FollowButton from '../components/FollowButton';
 
 function EditProfileForm({ user, onSaved, onCancel }) {
   const [name, setName] = useState(user.name);
@@ -80,18 +81,18 @@ function EditProfileForm({ user, onSaved, onCancel }) {
 export default function ProfilePage() {
   const { username } = useParams();
   const { user: viewer, updateUser } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    setProfile(null);
+    setData(null);
     setError('');
     setEditing(false);
     api(`/users/${encodeURIComponent(username)}`)
-      .then((data) => {
-        if (alive) setProfile(data.user);
+      .then((profile) => {
+        if (alive) setData(profile);
       })
       .catch((err) => {
         if (alive) setError(err.message || 'User not found.');
@@ -109,9 +110,10 @@ export default function ProfilePage() {
       </div>
     );
   }
-  if (!profile) return <Spinner />;
+  if (!data) return <Spinner />;
 
-  const isSelf = viewer && viewer.id === profile.id;
+  const { user: profile, counts, isFollowing } = data;
+  const isSelf = Boolean(viewer && viewer.id === profile.id);
 
   return (
     <div>
@@ -130,14 +132,39 @@ export default function ProfilePage() {
               Edit profile
             </button>
           )}
+          {!isSelf && (
+            <FollowButton
+              username={profile.username}
+              isFollowing={isFollowing}
+              onChange={(result) =>
+                setData((current) => ({
+                  ...current,
+                  isFollowing: result.following,
+                  counts: { ...current.counts, followers: result.followersCount },
+                }))
+              }
+            />
+          )}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-600">
+          <span>
+            <strong className="text-slate-900">{counts.posts}</strong> posts
+          </span>
+          <Link to={`/u/${profile.username}/followers`} className="hover:underline">
+            <strong className="text-slate-900">{counts.followers}</strong> followers
+          </Link>
+          <Link to={`/u/${profile.username}/following`} className="hover:underline">
+            <strong className="text-slate-900">{counts.following}</strong> following
+          </Link>
         </div>
       </div>
+
       {editing && (
         <EditProfileForm
           user={profile}
           onCancel={() => setEditing(false)}
           onSaved={(updated) => {
-            setProfile(updated);
+            setData((current) => ({ ...current, user: updated }));
             updateUser({ name: updated.name, bio: updated.bio, avatarUrl: updated.avatarUrl });
             setEditing(false);
           }}
