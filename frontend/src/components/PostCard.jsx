@@ -1,12 +1,48 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import Avatar from './Avatar';
 import { timeAgo } from '../utils/time';
 
+function HeartIcon({ filled }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path d="M10 16.5c-3.5-2.2-6.5-4.6-6.5-7.7C3.5 6.6 5.2 5 7.3 5c1.1 0 2.1.5 2.7 1.4C10.6 5.5 11.6 5 12.7 5c2.1 0 3.8 1.6 3.8 3.8 0 3.1-3 5.5-6.5 7.7z" />
+    </svg>
+  );
+}
+
 export default function PostCard({ post, onDelete, onUpdate }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [likeBusy, setLikeBusy] = useState(false);
   const canDelete = Boolean(user && (user.id === post.author.id || user.role === 'admin'));
+
+  async function toggleLike() {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setLikeBusy(true);
+    try {
+      const data = await api(`/posts/${post.id}/like`, {
+        method: post.likedByMe ? 'DELETE' : 'POST',
+      });
+      onUpdate?.({ likeCount: data.likeCount, likedByMe: data.liked });
+    } catch {
+      /* keep the previous state; server stays the source of truth */
+    } finally {
+      setLikeBusy(false);
+    }
+  }
 
   async function handleDelete() {
     if (!window.confirm('Delete this post? This also removes its comments.')) return;
@@ -49,6 +85,17 @@ export default function PostCard({ post, onDelete, onUpdate }) {
       )}
 
       <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleLike}
+          disabled={likeBusy}
+          aria-pressed={Boolean(post.likedByMe)}
+          className={post.likedByMe ? 'chip-liked' : 'chip'}
+        >
+          <HeartIcon filled={Boolean(post.likedByMe)} />
+          Like
+          <span className="font-normal">· {post.likeCount}</span>
+        </button>
         <Link to={`/posts/${post.id}`} className="chip">
           Comments · {post.commentCount}
         </Link>

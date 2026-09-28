@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import PostCard from '../components/PostCard';
+import CommentSection from '../components/CommentSection';
 import Spinner from '../components/Spinner';
 
 export default function PostPage() {
@@ -42,6 +43,15 @@ export default function PostPage() {
         post={post}
         onDelete={() => navigate('/')}
         onUpdate={(patch) => setPost((current) => ({ ...current, ...patch }))}
+      />
+      <CommentSection
+        post={post}
+        onCountChange={(delta) =>
+          setPost((current) => ({
+            ...current,
+            commentCount: Math.max(0, current.commentCount + delta),
+          }))
+        }
       />
     </div>
   );

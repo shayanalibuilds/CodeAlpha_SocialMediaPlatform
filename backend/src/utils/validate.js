@@ -59,4 +59,20 @@ function validatePost(body) {
   return { errors, values: { body: text, imageUrl } };
 }
 
-module.exports = { USERNAME_RE, EMAIL_RE, URL_RE, validateRegister, validateProfileUpdate, validatePost };
+function validateComment(body) {
+  const text = typeof body.body === 'string' ? body.body.trim() : '';
+  const errors = [];
+  if (text.length < 1) errors.push('Write a comment first.');
+  if (text.length > 300) errors.push('Comments are limited to 300 characters.');
+  return { errors, values: { body: text } };
+}
+
+module.exports = {
+  USERNAME_RE,
+  EMAIL_RE,
+  URL_RE,
+  validateRegister,
+  validateProfileUpdate,
+  validatePost,
+  validateComment,
+};

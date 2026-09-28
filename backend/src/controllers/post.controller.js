@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
+const Like = require('../models/Like');
 const User = require('../models/User');
 const { validatePost } = require('../utils/validate');
-const { publicPost } = require('../utils/serialize');
+const { withViewerState } = require('../utils/serialize');
 
 const PAGE_SIZE = 20;
 
@@ -38,7 +39,7 @@ async function listPosts(req, res, next) {
       .populate('author');
 
     res.json({
-      posts: posts.map(publicPost),
+      posts: await withViewerState(posts, req.user ? req.user._id : null),
       page,
       total,
       hasMore: page * PAGE_SIZE < total,
@@ -59,7 +60,7 @@ async function createPost(req, res, next) {
       imageUrl: values.imageUrl,
     });
     await post.populate('author');
-    res.status(201).json({ post: publicPost(post) });
+    res.status(201).json({ post: (await withViewerState(post, req.user._id))[0] });
   } catch (err) {
     next(err);
   }
@@ -71,7 +72,7 @@ async function getPost(req, res, next) {
     if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: 'Post not found.' });
     const post = await Post.findById(id).populate('author');
     if (!post) return res.status(404).json({ error: 'Post not found.' });
-    res.json({ post: publicPost(post) });
+    res.json({ post: (await withViewerState(post, req.user ? req.user._id : null))[0] });
   } catch (err) {
     next(err);
   }
@@ -97,4 +98,47 @@ async function deletePost(req, res, next) {
   }
 }
 
-module.exports = { listPosts, createPost, getPost, deletePost };
+async function likePost(req, res, next) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: 'Post not found.' });
+    const post = await Post.findById(id).select('_id');
+    if (!post) return res.status(404).json({ error: 'Post not found.' });
+
+    let created = false;
+    try {
+      await Like.create({ user: req.user._id, post: post._id });
+      created = true;
+    } catch (err) {
+      if (err.code !== 11000) throw err; // duplicate like is fine — idempotent
+    }
+
+    if (created) {
+      await Post.updateOne({ _id: post._id }, { $inc: { likeCount: 1 } });
+    }
+    const fresh = await Post.findById(post._id).select('likeCount');
+    res.json({ liked: true, likeCount: fresh.likeCount });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function unlikePost(req, res, next) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: 'Post not found.' });
+    const post = await Post.findById(id).select('_id');
+    if (!post) return res.status(404).json({ error: 'Post not found.' });
+
+    const removed = await Like.deleteOne({ user: req.user._id, post: post._id });
+    if (removed.deletedCount > 0) {
+      await Post.updateOne({ _id: post._id, likeCount: { $gt: 0 } }, { $inc: { likeCount: -1 } });
+    }
+    const fresh = await Post.findById(post._id).select('likeCount');
+    res.json({ liked: false, likeCount: fresh.likeCount });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listPosts, createPost, getPost, deletePost, likePost, unlikePost };
