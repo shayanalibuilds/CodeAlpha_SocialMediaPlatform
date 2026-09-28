@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { usePostList } from '../hooks/usePostList';
 import PostForm from '../components/PostForm';
 import PostCard from '../components/PostCard';
+import PostList from '../components/PostList';
 import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 
