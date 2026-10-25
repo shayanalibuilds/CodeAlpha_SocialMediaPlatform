@@ -6,9 +6,11 @@ import PostCard from '../components/PostCard';
 import PostList from '../components/PostList';
 import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 function AuthedFeed() {
   const list = usePostList({ scope: 'feed' });
+  useDocumentTitle('Feed');
 
   return (
     <div className="space-y-4">
@@ -56,32 +58,33 @@ function AuthedFeed() {
   );
 }
 
+function GuestHome() {
+  useDocumentTitle('Home');
+
+  return (
+    <div className="space-y-4">
+      <div className="card p-6">
+        <h1 className="text-lg font-bold text-slate-900">Welcome to Northwind Park</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          A friendly, family-safe corner for clubs, books, coding, sports, and art.
+          Log in to share updates and follow people you know.
+        </p>
+        <div className="mt-4 flex gap-2">
+          <Link to="/login" className="btn-primary">Log in</Link>
+          <Link to="/register" className="btn-secondary">Register</Link>
+        </div>
+      </div>
+      <h2 className="px-1 text-sm font-semibold text-slate-500">Recent public posts</h2>
+      <PostList
+        scope="explore"
+        emptyTitle="No posts yet."
+        emptyText="Be the first to share an update once you join."
+      />
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { user } = useAuth();
-
-  if (!user) {
-    return (
-      <div className="space-y-4">
-        <div className="card p-6">
-          <h1 className="text-lg font-bold text-slate-900">Welcome to Northwind Park</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            A friendly, family-safe corner for clubs, books, coding, sports, and art.
-            Log in to share updates and follow people you know.
-          </p>
-          <div className="mt-4 flex gap-2">
-            <Link to="/login" className="btn-primary">Log in</Link>
-            <Link to="/register" className="btn-secondary">Register</Link>
-          </div>
-        </div>
-        <h2 className="px-1 text-sm font-semibold text-slate-500">Recent public posts</h2>
-        <PostList
-          scope="explore"
-          emptyTitle="No posts yet."
-          emptyText="Be the first to share an update once you join."
-        />
-      </div>
-    );
-  }
-
-  return <AuthedFeed />;
+  return user ? <AuthedFeed /> : <GuestHome />;
 }
