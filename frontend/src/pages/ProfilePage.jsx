@@ -6,6 +6,8 @@ import Avatar from '../components/Avatar';
 import Spinner from '../components/Spinner';
 import PostList from '../components/PostList';
 import FollowButton from '../components/FollowButton';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { plural } from '../utils/format';
 
 function EditProfileForm({ user, onSaved, onCancel }) {
   const [name, setName] = useState(user.name);
@@ -84,6 +86,10 @@ export default function ProfilePage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
+  // Bumped after a profile save so the post list remounts and refetches with
+  // the new author name/avatar (cards also read the live viewer from context).
+  const [postsVersion, setPostsVersion] = useState(0);
+  useDocumentTitle(error ? 'User not found' : `@${username}`);
 
   useEffect(() => {
     let alive = true;
@@ -148,10 +154,10 @@ export default function ProfilePage() {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-600">
           <span>
-            <strong className="text-slate-900">{counts.posts}</strong> posts
+            <strong className="text-slate-900">{counts.posts}</strong> {plural(counts.posts, 'post')}
           </span>
           <Link to={`/u/${profile.username}/followers`} className="hover:underline">
-            <strong className="text-slate-900">{counts.followers}</strong> followers
+            <strong className="text-slate-900">{counts.followers}</strong> {plural(counts.followers, 'follower')}
           </Link>
           <Link to={`/u/${profile.username}/following`} className="hover:underline">
             <strong className="text-slate-900">{counts.following}</strong> following
@@ -166,6 +172,7 @@ export default function ProfilePage() {
           onSaved={(updated) => {
             setData((current) => ({ ...current, user: updated }));
             updateUser({ name: updated.name, bio: updated.bio, avatarUrl: updated.avatarUrl });
+            setPostsVersion((v) => v + 1);
             setEditing(false);
           }}
         />
@@ -175,6 +182,7 @@ export default function ProfilePage() {
         Posts by {profile.name}
       </h2>
       <PostList
+        key={`${profile.username}:${postsVersion}`}
         scope="explore"
         author={profile.username}
         emptyTitle="No updates yet."
