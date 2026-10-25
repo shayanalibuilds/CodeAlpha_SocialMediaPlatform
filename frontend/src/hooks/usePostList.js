@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 
 function buildUrl(scope, author, page) {
@@ -13,6 +13,7 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false); // same-tick guard: state alone can lag a double-click
   const [moreError, setMoreError] = useState('');
   const [error, setError] = useState('');
 
@@ -39,7 +40,8 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   }, [scope, author]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore) return; // double-click safe
+    if (loadingMoreRef.current) return; // double-click safe (ref + state)
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     setMoreError('');
     const next = page + 1;
@@ -58,9 +60,10 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
       // problem separately from the initial-load error.
       setMoreError(err.message || 'Could not load more posts.');
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [page, scope, author, loadingMore]);
+  }, [page, scope, author]);
 
   const prepend = useCallback((post) => {
     setPosts((current) => [post, ...current]);

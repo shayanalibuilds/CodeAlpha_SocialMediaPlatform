@@ -1,21 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-// A missing JWT_SECRET must never silently fall back to a predictable value.
-// - Production: fail fast at startup — the process refuses to run unconfigured.
-// - Everywhere else: an ephemeral, clearly-labeled dev fallback keeps local
-//   development and tests frictionless, but it is never a secret worth stealing.
+// A missing JWT_SECRET must never silently fall back to a value that is public
+// in this repo — anyone could forge a token for any user with it (issue #2).
+// - Outside the test suite: fail fast. The process refuses to run unconfigured.
+// - Test environment only: a clearly-labeled placeholder keeps the suite hermetic.
 function resolveSecret() {
   const secret = process.env.JWT_SECRET;
   if (secret && secret.trim()) return secret.trim();
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'JWT_SECRET is required in production. Set a long random value before starting the server (e.g. `openssl rand -hex 32`).'
-    );
-  }
-  console.warn(
-    '[auth] JWT_SECRET is not set — using a development-only fallback. Never run like this outside local development.'
+  if (process.env.NODE_ENV === 'test') return 'test-only-insecure-secret';
+  throw new Error(
+    'JWT_SECRET is required. Generate a long random value (e.g. `openssl rand -hex 32`) and set it in backend/.env before starting the server.'
   );
-  return 'dev-only-insecure-do-not-ship';
 }
 
 const JWT_SECRET = resolveSecret();

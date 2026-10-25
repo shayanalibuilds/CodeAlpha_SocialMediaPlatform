@@ -1,5 +1,14 @@
 require('dotenv').config();
 
+// Fail fast (issue #2): without a real signing secret the API must not boot —
+// tokens signed with a public fallback could be forged for any user.
+try {
+  require('./utils/tokens').resolveSecret();
+} catch (err) {
+  console.error(`[fatal] ${err.message}`);
+  process.exit(1);
+}
+
 const app = require('./app');
 const { connectDB } = require('./config/db');
 
