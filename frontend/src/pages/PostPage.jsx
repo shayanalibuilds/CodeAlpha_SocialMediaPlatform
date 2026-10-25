@@ -4,12 +4,14 @@ import { api } from '../api/client';
 import PostCard from '../components/PostCard';
 import CommentSection from '../components/CommentSection';
 import Spinner from '../components/Spinner';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function PostPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [error, setError] = useState('');
+  useDocumentTitle(error ? 'Post not found' : post ? `Post by @${post.author.username}` : 'Post');
 
   useEffect(() => {
     let alive = true;
