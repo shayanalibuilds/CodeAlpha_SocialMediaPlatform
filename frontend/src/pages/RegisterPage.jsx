@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  useDocumentTitle('Create account');
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '' });
   const [error, setError] = useState('');
