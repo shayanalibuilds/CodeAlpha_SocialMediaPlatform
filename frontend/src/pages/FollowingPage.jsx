@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import UserList from '../components/UserList';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function FollowingPage() {
   const { username } = useParams();
+  useDocumentTitle(`@${username} follows`);
 
   return (
     <div className="space-y-4">
