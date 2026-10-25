@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import Avatar from './Avatar';
 import { timeAgo } from '../utils/time';
+import { freshAuthor } from '../utils/format';
 
 function HeartIcon({ filled }) {
   return (
@@ -25,7 +26,13 @@ export default function PostCard({ post, onDelete, onUpdate }) {
   const navigate = useNavigate();
   const [likeBusy, setLikeBusy] = useState(false);
   const [actionError, setActionError] = useState('');
-  const canDelete = Boolean(user && (user.id === post.author.id || user.role === 'admin'));
+  const [imageBroken, setImageBroken] = useState(false);
+  const author = freshAuthor(post.author, user);
+  const canDelete = Boolean(user && (user.id === author.id || user.role === 'admin'));
+
+  useEffect(() => {
+    setImageBroken(false);
+  }, [post.imageUrl]);
 
   async function toggleLike() {
     if (!user) {
@@ -61,12 +68,12 @@ export default function PostCard({ post, onDelete, onUpdate }) {
   return (
     <article className="card p-4">
       <div className="flex items-start justify-between gap-2">
-        <Link to={`/u/${post.author.username}`} className="flex min-w-0 items-center gap-3">
-          <Avatar user={post.author} />
+        <Link to={`/u/${author.username}`} className="flex min-w-0 items-center gap-3">
+          <Avatar user={author} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">{post.author.name}</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{author.name}</p>
             <p className="truncate text-xs text-slate-500">
-              @{post.author.username} · {timeAgo(post.createdAt)}
+              @{author.username} · {timeAgo(post.createdAt)}
             </p>
           </div>
         </Link>
@@ -79,13 +86,23 @@ export default function PostCard({ post, onDelete, onUpdate }) {
 
       <p className="mt-3 whitespace-pre-wrap break-words text-slate-800">{post.body}</p>
 
-      {post.imageUrl && (
+      {post.imageUrl && !imageBroken && (
         <img
           src={post.imageUrl}
           alt="Post attachment"
           loading="lazy"
-          className="mt-3 max-h-96 w-full rounded-lg border border-slate-200 bg-slate-100 object-cover"
+          onError={() => setImageBroken(true)}
+          className="mt-3 max-h-96 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100 object-cover text-[0px]"
         />
+      )}
+      {post.imageUrl && imageBroken && (
+        <div
+          role="img"
+          aria-label="Image unavailable"
+          className="mt-3 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400"
+        >
+          Image unavailable
+        </div>
       )}
 
       <div className="mt-3 flex items-center gap-2">
