@@ -8,6 +8,16 @@ export function AuthProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // The api client clears the token and broadcasts this event on any 401,
+    // so expired/invalid sessions drop back to the logged-out UI immediately.
+    function onUnauthorized() {
+      setUser(null);
+    }
+    window.addEventListener('northwind:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('northwind:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     (async () => {
       if (!getToken()) {

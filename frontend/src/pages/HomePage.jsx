@@ -32,9 +32,22 @@ function AuthedFeed() {
               onUpdate={list.updatePost}
             />
           ))}
-          {list.hasMore && (
-            <button type="button" className="btn-secondary w-full" onClick={list.loadMore}>
-              Load more
+          {list.moreError && (
+            <div className="card flex flex-wrap items-center justify-between gap-3 p-3 text-sm text-rose-600">
+              <span>{list.moreError}</span>
+              <button type="button" className="btn-secondary" onClick={list.loadMore}>
+                Try again
+              </button>
+            </div>
+          )}
+          {list.hasMore && !list.moreError && (
+            <button
+              type="button"
+              className="btn-secondary w-full"
+              onClick={list.loadMore}
+              disabled={list.loadingMore}
+            >
+              {list.loadingMore ? 'Loading…' : 'Load more'}
             </button>
           )}
         </>

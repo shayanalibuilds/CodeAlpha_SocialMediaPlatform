@@ -1,9 +1,25 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Layout() {
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
+  const [sessionNotice, setSessionNotice] = useState('');
+
+  useEffect(() => {
+    // The api client broadcasts this on any 401: the session just ended, so say
+    // why the UI dropped to the logged-out state instead of failing silently.
+    function onUnauthorized() {
+      setSessionNotice('Your session has expired. Please log in again.');
+    }
+    window.addEventListener('northwind:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('northwind:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    if (user) setSessionNotice(''); // a fresh login clears the notice
+  }, [user]);
 
   async function handleLogout() {
     await logout();
@@ -34,6 +50,24 @@ export default function Layout() {
           </nav>
         </div>
       </header>
+      {sessionNotice && (
+        <div
+          role="status"
+          className="border-b border-rose-100 bg-rose-50 px-4 py-2 text-center text-sm text-rose-700"
+        >
+          {sessionNotice}{' '}
+          <Link to="/login" className="font-semibold underline" onClick={() => setSessionNotice('')}>
+            Log in
+          </Link>{' '}
+          <button
+            type="button"
+            className="ml-2 text-xs text-rose-500 hover:underline"
+            onClick={() => setSessionNotice('')}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
         {ready ? <Outlet /> : <p className="py-10 text-center text-sm text-slate-500">Loading…</p>}
       </main>

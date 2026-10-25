@@ -24,6 +24,7 @@ export default function PostCard({ post, onDelete, onUpdate }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [likeBusy, setLikeBusy] = useState(false);
+  const [actionError, setActionError] = useState('');
   const canDelete = Boolean(user && (user.id === post.author.id || user.role === 'admin'));
 
   async function toggleLike() {
@@ -32,13 +33,15 @@ export default function PostCard({ post, onDelete, onUpdate }) {
       return;
     }
     setLikeBusy(true);
+    setActionError('');
     try {
       const data = await api(`/posts/${post.id}/like`, {
         method: post.likedByMe ? 'DELETE' : 'POST',
       });
-      onUpdate?.({ likeCount: data.likeCount, likedByMe: data.liked });
-    } catch {
-      /* keep the previous state; server stays the source of truth */
+      // Contract: (postId, patch) — matches usePostList.updatePost everywhere.
+      onUpdate?.(post.id, { likeCount: data.likeCount, likedByMe: data.liked });
+    } catch (err) {
+      setActionError(err.message || 'Could not update the like.');
     } finally {
       setLikeBusy(false);
     }
@@ -46,11 +49,12 @@ export default function PostCard({ post, onDelete, onUpdate }) {
 
   async function handleDelete() {
     if (!window.confirm('Delete this post? This also removes its comments.')) return;
+    setActionError('');
     try {
       await api(`/posts/${post.id}`, { method: 'DELETE' });
       onDelete?.(post.id);
-    } catch {
-      /* keep the card; a refresh will show the truth */
+    } catch (err) {
+      setActionError(err.message || 'Could not delete the post.');
     }
   }
 
@@ -100,6 +104,7 @@ export default function PostCard({ post, onDelete, onUpdate }) {
           Comments · {post.commentCount}
         </Link>
       </div>
+      {actionError && <p className="mt-2 text-xs font-medium text-rose-600">{actionError}</p>}
     </article>
   );
 }

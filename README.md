@@ -90,6 +90,11 @@ npm run seed
 npm run dev               # API on http://127.0.0.1:5001
 ```
 
+Set `JWT_SECRET` in `.env` before running — generate one with `openssl rand -hex 32`
+and paste the output next to `JWT_SECRET=`. The API refuses to start without it
+(outside the automated test suite there is no fallback), so an unconfigured
+deployment can never sign tokens with a publicly known value.
+
 Sanity check:
 
 ```bash

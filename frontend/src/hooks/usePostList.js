@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 
 function buildUrl(scope, author, page) {
@@ -12,6 +12,9 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false); // same-tick guard: state alone can lag a double-click
+  const [moreError, setMoreError] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -37,14 +40,28 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   }, [scope, author]);
 
   const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current) return; // double-click safe (ref + state)
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setMoreError('');
     const next = page + 1;
     try {
       const data = await api(buildUrl(scope, author, next));
-      setPosts((current) => [...current, ...data.posts]);
+      setPosts((current) => {
+        // Dedupe by id so overlapping pages never render a post twice.
+        const seen = new Set(current.map((post) => post.id));
+        const fresh = data.posts.filter((post) => !seen.has(post.id));
+        return [...current, ...fresh];
+      });
       setPage(next);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(err.message || 'Could not load more posts.');
+      // Pagination failed — keep the posts already on screen and surface the
+      // problem separately from the initial-load error.
+      setMoreError(err.message || 'Could not load more posts.');
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
     }
   }, [page, scope, author]);
 
@@ -60,5 +77,16 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
     setPosts((current) => current.map((post) => (post.id === id ? { ...post, ...patch } : post)));
   }, []);
 
-  return { posts, hasMore, loading, error, loadMore, prepend, removePost, updatePost };
+  return {
+    posts,
+    hasMore,
+    loading,
+    loadingMore,
+    moreError,
+    error,
+    loadMore,
+    prepend,
+    removePost,
+    updatePost,
+  };
 }
