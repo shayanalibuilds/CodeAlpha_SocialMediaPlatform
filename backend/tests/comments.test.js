@@ -88,4 +88,25 @@ describe('comments', () => {
       .send({ body: 'ghost post' });
     expect(missing.status).toBe(404);
   });
+
+  // The frontend comment box disables submit above this same limit (QA polish).
+  test('accepts exactly 300 characters and rejects 301 with a clear message', async () => {
+    const { token } = await registerUser();
+    const post = await createPost(token, 'limit check');
+
+    const atLimit = await request(app)
+      .post(`/api/posts/${post.id}/comments`).set(auth(token))
+      .send({ body: 'c'.repeat(300) });
+    expect(atLimit.status).toBe(201);
+    expect(atLimit.body.comment.body).toHaveLength(300);
+
+    const overLimit = await request(app)
+      .post(`/api/posts/${post.id}/comments`).set(auth(token))
+      .send({ body: 'c'.repeat(301) });
+    expect(overLimit.status).toBe(400);
+    expect(overLimit.body.error).toBe('Comments are limited to 300 characters.');
+
+    const list = await request(app).get(`/api/posts/${post.id}/comments`);
+    expect(list.body.comments).toHaveLength(1);
+  });
 });
