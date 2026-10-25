@@ -90,6 +90,10 @@ npm run seed
 npm run dev               # API on http://127.0.0.1:5001
 ```
 
+Set `JWT_SECRET` in `.env` before running — generate one with `openssl rand -hex 32`.
+In production the API fails fast at startup when `JWT_SECRET` is missing, and there is
+no built-in fallback secret worth guessing.
+
 Sanity check:
 
 ```bash

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Like = require('../models/Like');
+const Comment = require('../models/Comment');
 const Follow = require('../models/Follow');
 const User = require('../models/User');
 const { validatePost } = require('../utils/validate');
@@ -93,7 +94,12 @@ async function deletePost(req, res, next) {
       return res.status(403).json({ error: 'Only the author can delete this post.' });
     }
 
-    await post.deleteOne();
+    // Remove the post together with its likes and comments so nothing is orphaned.
+    await Promise.all([
+      Like.deleteMany({ post: post._id }),
+      Comment.deleteMany({ post: post._id }),
+      post.deleteOne(),
+    ]);
     res.json({ ok: true });
   } catch (err) {
     next(err);

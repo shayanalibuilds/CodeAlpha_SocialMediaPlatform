@@ -124,3 +124,36 @@ describe('posts: delete permissions', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('posts: delete cleans up likes and comments (issue #3)', () => {
+  test('deleting a post removes its likes and comments too', async () => {
+    const Like = require('../src/models/Like');
+    const Comment = require('../src/models/Comment');
+    const author = await registerUser({ username: 'cleanauthor' });
+    const liker = await registerUser({ username: 'cleanliker' });
+
+    const created = await request(app)
+      .post('/api/posts')
+      .set(auth(author.token))
+      .send({ body: 'This post will be deleted with its reactions.' });
+    const postId = created.body.post.id;
+
+    await request(app).post(`/api/posts/${postId}/like`).set(auth(liker.token));
+    await request(app).post(`/api/posts/${postId}/like`).set(auth(author.token));
+    await request(app)
+      .post(`/api/posts/${postId}/comments`)
+      .set(auth(liker.token))
+      .send({ body: 'This comment should not outlive the post.' });
+
+    const before = await request(app).get(`/api/posts/${postId}`);
+    expect(before.status).toBe(200);
+    expect(before.body.post.likeCount).toBe(2);
+    expect(before.body.post.commentCount).toBe(1);
+
+    const del = await request(app).delete(`/api/posts/${postId}`).set(auth(author.token));
+    expect(del.status).toBe(200);
+
+    expect(await Like.countDocuments({ post: postId })).toBe(0);
+    expect(await Comment.countDocuments({ post: postId })).toBe(0);
+  });
+});
