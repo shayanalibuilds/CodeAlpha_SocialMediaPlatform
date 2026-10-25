@@ -5,19 +5,25 @@ import { useAuth } from '../hooks/useAuth';
 import Avatar from '../components/Avatar';
 import Spinner from '../components/Spinner';
 import { timeAgo } from '../utils/time';
+import { freshAuthor } from '../utils/format';
+
+const COMMENT_MAX_LENGTH = 300; // matches the server's validateComment limit
 
 function CommentForm({ postId, onAdded }) {
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const trimmed = body.trim();
+  const tooLong = body.length > COMMENT_MAX_LENGTH;
+  const canSubmit = trimmed.length > 0 && !tooLong && !busy;
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const trimmed = body.trim();
     if (!trimmed) {
       setError('Write a comment first.');
       return;
     }
+    if (tooLong) return;
     setError('');
     setBusy(true);
     try {
@@ -43,18 +49,28 @@ function CommentForm({ postId, onAdded }) {
         rows={2}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        maxLength={340}
+        maxLength={COMMENT_MAX_LENGTH + 40}
+        aria-invalid={tooLong}
+        aria-describedby="comment-count"
         placeholder="Keep it kind and friendly."
       />
       <div className="flex items-center justify-between">
-        <span className={`text-xs ${body.length > 300 ? 'font-semibold text-rose-600' : 'text-slate-400'}`}>
-          {body.length} / 300
+        <span
+          id="comment-count"
+          className={`text-xs ${tooLong ? 'font-semibold text-rose-600' : 'text-slate-400'}`}
+        >
+          {body.length} / {COMMENT_MAX_LENGTH}
         </span>
-        <button type="submit" className="btn-primary" disabled={busy || !body.trim()}>
+        <button type="submit" className="btn-primary" disabled={!canSubmit}>
           Comment
         </button>
       </div>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {tooLong && (
+        <p className="text-sm text-rose-600" role="alert">
+          Comments are limited to {COMMENT_MAX_LENGTH} characters. Remove {body.length - COMMENT_MAX_LENGTH} to post.
+        </p>
+      )}
+      {error && !tooLong && <p className="text-sm text-rose-600">{error}</p>}
     </form>
   );
 }
@@ -72,36 +88,39 @@ function CommentList({ comments, onDelete }) {
 
   return (
     <ul className="mt-2 divide-y divide-slate-100">
-      {comments.map((comment) => (
-        <li key={comment.id} className="flex items-start justify-between gap-2 py-3">
-          <div className="flex min-w-0 gap-3">
-            <Avatar user={comment.author} size="sm" />
-            <div className="min-w-0">
-              <p className="text-sm">
-                <Link
-                  to={`/u/${comment.author.username}`}
-                  className="font-semibold text-slate-900 hover:underline"
-                >
-                  {comment.author.name}
-                </Link>{' '}
-                <span className="text-xs text-slate-500">
-                  @{comment.author.username} · {timeAgo(comment.createdAt)}
-                </span>
-              </p>
-              <p className="whitespace-pre-wrap break-words text-sm text-slate-800">{comment.body}</p>
+      {comments.map((raw) => {
+        const comment = { ...raw, author: freshAuthor(raw.author, user) };
+        return (
+          <li key={comment.id} className="flex items-start justify-between gap-2 py-3">
+            <div className="flex min-w-0 gap-3">
+              <Avatar user={comment.author} size="sm" />
+              <div className="min-w-0">
+                <p className="text-sm">
+                  <Link
+                    to={`/u/${comment.author.username}`}
+                    className="font-semibold text-slate-900 hover:underline"
+                  >
+                    {comment.author.name}
+                  </Link>{' '}
+                  <span className="text-xs text-slate-500">
+                    @{comment.author.username} · {timeAgo(comment.createdAt)}
+                  </span>
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm text-slate-800">{comment.body}</p>
+              </div>
             </div>
-          </div>
-          {user && user.id === comment.author.id && (
-            <button
-              type="button"
-              className="btn-danger"
-              onClick={() => onDelete(comment.id)}
-            >
-              Delete comment
-            </button>
-          )}
-        </li>
-      ))}
+            {user && user.id === comment.author.id && (
+              <button
+                type="button"
+                className="btn-danger"
+                onClick={() => onDelete(comment.id)}
+              >
+                Delete comment
+              </button>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

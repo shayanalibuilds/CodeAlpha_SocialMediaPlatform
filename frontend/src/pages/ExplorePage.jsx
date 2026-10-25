@@ -1,6 +1,8 @@
 import PostList from '../components/PostList';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function ExplorePage() {
+  useDocumentTitle('Explore');
   return (
     <div className="space-y-4">
       <div className="px-1">
