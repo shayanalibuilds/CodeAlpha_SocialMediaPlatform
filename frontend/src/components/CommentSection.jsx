@@ -110,6 +110,7 @@ export default function CommentSection({ post, onCountChange }) {
   const { user } = useAuth();
   const [comments, setComments] = useState(null);
   const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -129,12 +130,13 @@ export default function CommentSection({ post, onCountChange }) {
 
   async function handleDelete(commentId) {
     if (!window.confirm('Delete this comment?')) return;
+    setDeleteError('');
     try {
       await api(`/comments/${commentId}`, { method: 'DELETE' });
       setComments((current) => current.filter((comment) => comment.id !== commentId));
       onCountChange(-1);
-    } catch {
-      /* refresh shows the truth */
+    } catch (err) {
+      setDeleteError(err.message || 'Could not delete the comment.');
     }
   }
 
@@ -144,6 +146,7 @@ export default function CommentSection({ post, onCountChange }) {
         Comments · {post.commentCount}
       </h2>
       {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
+      {deleteError && <p className="mt-4 text-sm text-rose-600">{deleteError}</p>}
       {!error && comments === null && <Spinner label="Loading comments…" />}
       {!error && comments !== null && (
         <CommentList comments={comments} onDelete={handleDelete} />

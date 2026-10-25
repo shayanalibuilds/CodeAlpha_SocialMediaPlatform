@@ -25,6 +25,16 @@ export function clearToken() {
   }
 }
 
+// A rejected token means the session is over: drop it and tell the app so the
+// UI can reset to the logged-out state instead of failing silently forever.
+function handleUnauthorized(path) {
+  if (path.startsWith('/auth/login') || path.startsWith('/auth/register')) return;
+  clearToken();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('northwind:unauthorized'));
+  }
+}
+
 export async function api(path, { method = 'GET', body } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -45,6 +55,7 @@ export async function api(path, { method = 'GET', body } = {}) {
   }
 
   if (!res.ok) {
+    if (res.status === 401) handleUnauthorized(path);
     const error = new Error((data && data.error) || `Request failed (${res.status}).`);
     error.status = res.status;
     throw error;

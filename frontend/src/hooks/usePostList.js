@@ -12,6 +12,8 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -37,16 +39,28 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
   }, [scope, author]);
 
   const loadMore = useCallback(async () => {
+    if (loadingMore) return; // double-click safe
+    setLoadingMore(true);
+    setMoreError('');
     const next = page + 1;
     try {
       const data = await api(buildUrl(scope, author, next));
-      setPosts((current) => [...current, ...data.posts]);
+      setPosts((current) => {
+        // Dedupe by id so overlapping pages never render a post twice.
+        const seen = new Set(current.map((post) => post.id));
+        const fresh = data.posts.filter((post) => !seen.has(post.id));
+        return [...current, ...fresh];
+      });
       setPage(next);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(err.message || 'Could not load more posts.');
+      // Pagination failed — keep the posts already on screen and surface the
+      // problem separately from the initial-load error.
+      setMoreError(err.message || 'Could not load more posts.');
+    } finally {
+      setLoadingMore(false);
     }
-  }, [page, scope, author]);
+  }, [page, scope, author, loadingMore]);
 
   const prepend = useCallback((post) => {
     setPosts((current) => [post, ...current]);
@@ -60,5 +74,16 @@ export function usePostList({ scope = 'explore', author = '' } = {}) {
     setPosts((current) => current.map((post) => (post.id === id ? { ...post, ...patch } : post)));
   }, []);
 
-  return { posts, hasMore, loading, error, loadMore, prepend, removePost, updatePost };
+  return {
+    posts,
+    hasMore,
+    loading,
+    loadingMore,
+    moreError,
+    error,
+    loadMore,
+    prepend,
+    removePost,
+    updatePost,
+  };
 }

@@ -42,7 +42,7 @@ export default function PostPage() {
       <PostCard
         post={post}
         onDelete={() => navigate('/')}
-        onUpdate={(patch) => setPost((current) => ({ ...current, ...patch }))}
+        onUpdate={(postId, patch) => setPost((current) => ({ ...current, ...patch }))}
       />
       <CommentSection
         post={post}
